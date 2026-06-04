@@ -9,56 +9,64 @@ from datetime import date
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 @router.get("/{store_id}/metrics", response_model=MetricsResponse)
 async def get_metrics(store_id: str, db: AsyncSession = Depends(get_db)):
     try:
         today = date.today().isoformat()
 
-        # ── Unique visitors ──────────────────────────────
+        # ─────────────────────────────
+        # Common date filter (optional but recommended)
+        # ─────────────────────────────
+        date_filter = "date(timestamp) = :today"
+
+        # ── Unique visitors ───────────
         visitors_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT COUNT(DISTINCT visitor_id)
                 FROM events
                 WHERE store_id = :store_id
                 AND is_staff = 0
                 AND event_type IN ('ENTRY', 'REENTRY')
+                AND {date_filter}
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
         unique_visitors = visitors_result.scalar() or 0
 
-        # ── Conversion rate (5 min window) ───────────────
+        # ── Conversion rate (visitor-linked) ───────────
         converted_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT COUNT(DISTINCT e.visitor_id)
                 FROM events e
                 WHERE e.store_id = :store_id
                 AND e.is_staff = 0
                 AND e.zone_id = 'BILLING'
+                AND {date_filter}
                 AND EXISTS (
-                    SELECT 1 FROM pos_transactions p
-                    WHERE p.store_id = :store_id
+                    SELECT 1
+                    FROM pos_transactions p
+                    WHERE p.store_id = e.store_id
+                    AND p.visitor_id = e.visitor_id
+                    AND {date_filter.replace("timestamp", "p.timestamp")}
                     AND ABS(
                         strftime('%s', e.timestamp) -
                         strftime('%s', p.timestamp)
                     ) <= 1800
                 )
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
         converted_visitors = converted_result.scalar() or 0
 
-        if unique_visitors > 0:
-            converted_visitors = min(converted_visitors, unique_visitors)
-            conversion_rate = round(
-                converted_visitors / unique_visitors * 100, 2
-            )
-        else:
-            conversion_rate = 0.0
+        conversion_rate = (
+            round((converted_visitors / unique_visitors) * 100, 2)
+            if unique_visitors > 0 else 0.0
+        )
 
-        # ── Avg dwell per zone ───────────────────────────
+        # ── Avg dwell per zone ───────────
         dwell_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT zone_id,
                        COUNT(*) as visit_count,
                        AVG(dwell_ms) as avg_dwell
@@ -67,10 +75,12 @@ async def get_metrics(store_id: str, db: AsyncSession = Depends(get_db)):
                 AND is_staff = 0
                 AND event_type = 'ZONE_DWELL'
                 AND zone_id IS NOT NULL
+                AND {date_filter}
                 GROUP BY zone_id
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
+
         dwell_rows = dwell_result.fetchall()
 
         avg_dwell_per_zone = [
@@ -83,46 +93,49 @@ async def get_metrics(store_id: str, db: AsyncSession = Depends(get_db)):
             for row in dwell_rows
         ]
 
-        # ── Queue depth ──────────────────────────────────
+        # ── Queue depth ───────────
         queue_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT MAX(queue_depth)
                 FROM events
                 WHERE store_id = :store_id
                 AND event_type = 'BILLING_QUEUE_JOIN'
                 AND queue_depth IS NOT NULL
+                AND {date_filter}
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
         queue_depth = queue_result.scalar() or 0
 
-        # ── Abandonment rate ─────────────────────────────
+        # ── Abandonment rate ───────────
         abandon_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT COUNT(DISTINCT visitor_id)
                 FROM events
                 WHERE store_id = :store_id
                 AND is_staff = 0
                 AND event_type = 'BILLING_QUEUE_ABANDON'
+                AND {date_filter}
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
         abandoned = abandon_result.scalar() or 0
 
         queue_joins_result = await db.execute(
-            text("""
+            text(f"""
                 SELECT COUNT(DISTINCT visitor_id)
                 FROM events
                 WHERE store_id = :store_id
                 AND is_staff = 0
                 AND event_type = 'BILLING_QUEUE_JOIN'
+                AND {date_filter}
             """),
-            {"store_id": store_id}
+            {"store_id": store_id, "today": today}
         )
         queue_joins = queue_joins_result.scalar() or 0
 
         abandonment_rate = (
-            round(abandoned / queue_joins * 100, 2)
+            round((abandoned / queue_joins) * 100, 2)
             if queue_joins > 0 else 0.0
         )
 
