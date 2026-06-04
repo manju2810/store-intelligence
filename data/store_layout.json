@@ -1,0 +1,121 @@
+{
+  "stores": [
+    {
+      "store_id": "ST1008",
+      "store_name": "Brigade_Bangalore",
+      "city": "Bangalore",
+      "open_hours": { "open": "10:00", "close": "22:00" },
+      "cameras": [
+        {
+          "camera_id": "CAM1",
+          "type": "zone",
+          "location": "Zone coverage - left shelf",
+          "file": "store 1/CAM 1 - zone.mp4"
+        },
+        {
+          "camera_id": "CAM2",
+          "type": "zone",
+          "location": "Zone coverage - center display",
+          "file": "store 1/CAM 2 - zone.mp4"
+        },
+        {
+          "camera_id": "CAM3",
+          "type": "entry",
+          "location": "Entry/Exit threshold",
+          "file": "store 1/CAM 3 - entry.mp4"
+        },
+        {
+          "camera_id": "CAM5",
+          "type": "billing",
+          "location": "Billing counter area",
+          "file": "store 1/CAM 5 - billing.mp4"
+        }
+      ],
+      "zones": [
+        {
+          "zone_id": "ENTRY",
+          "zone_name": "Entry Exit",
+          "camera_ids": ["CAM3"],
+          "sku_zone": null,
+          "type": "entry_exit"
+        },
+        {
+          "zone_id": "SKINCARE",
+          "zone_name": "Skincare",
+          "camera_ids": ["CAM1"],
+          "sku_zone": "MOISTURISER",
+          "type": "product"
+        },
+        {
+          "zone_id": "MAKEUP",
+          "zone_name": "Makeup",
+          "camera_ids": ["CAM2"],
+          "sku_zone": "FOUNDATION",
+          "type": "product"
+        },
+        {
+          "zone_id": "BILLING",
+          "zone_name": "Billing Counter",
+          "camera_ids": ["CAM5"],
+          "sku_zone": null,
+          "type": "billing"
+        }
+      ]
+    },
+    {
+      "store_id": "ST1009",
+      "store_name": "Store_2",
+      "city": "Bangalore",
+      "open_hours": { "open": "10:00", "close": "22:00" },
+      "cameras": [
+        {
+          "camera_id": "CAM1",
+          "type": "entry",
+          "location": "Entry point 1",
+          "file": "store 2/entry 1.mp4"
+        },
+        {
+          "camera_id": "CAM2",
+          "type": "entry",
+          "location": "Entry point 2",
+          "file": "store 2/entry 2.mp4"
+        },
+        {
+          "camera_id": "CAM3",
+          "type": "zone",
+          "location": "Main floor zone",
+          "file": "store 2/zone.mp4"
+        },
+        {
+          "camera_id": "CAM4",
+          "type": "billing",
+          "location": "Billing area",
+          "file": "store 2/billing_area.mp4"
+        }
+      ],
+      "zones": [
+        {
+          "zone_id": "ENTRY",
+          "zone_name": "Entry Exit",
+          "camera_ids": ["CAM1", "CAM2"],
+          "sku_zone": null,
+          "type": "entry_exit"
+        },
+        {
+          "zone_id": "MAIN_FLOOR",
+          "zone_name": "Main Floor",
+          "camera_ids": ["CAM3"],
+          "sku_zone": "GENERAL",
+          "type": "product"
+        },
+        {
+          "zone_id": "BILLING",
+          "zone_name": "Billing Area",
+          "camera_ids": ["CAM4"],
+          "sku_zone": null,
+          "type": "billing"
+        }
+      ]
+    }
+  ]
+}

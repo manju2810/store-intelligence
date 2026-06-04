@@ -1,0 +1,26 @@
+services:
+  api:
+    build: ./app
+    container_name: store_intelligence_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./pipeline/events:/app/events
+    environment:
+      - DATABASE_URL=sqlite:///./data/store.db
+      - EVENTS_DIR=/app/events
+      - STORE_LAYOUT=/app/data/store_layout.json
+      - POS_CSV=/app/data/pos_transactions.csv
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
